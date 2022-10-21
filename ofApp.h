@@ -33,6 +33,7 @@
 class Ray {
 public:
 	Ray(glm::vec3 p, glm::vec3 d) { this->p = p; this->d = d; }
+	Ray() {}
 	void draw(float t) { ofDrawLine(p, p + t * d); }
 
 	glm::vec3 evalPoint(float t) {
@@ -105,32 +106,31 @@ public:
 	float intensity = 0.0;
 };
 
-class pointLight : public Light {
+class spotLight : public Light {
 public:
-	pointLight(glm::vec3 p, glm::vec3 aimPos, float i, float angle) { position = p; intensity = i; aimPoint = aimPos; direction = p-aimPoint; 
-	coneAngle = tan(glm::radians(angle)) * coneHeight; 
+	spotLight(glm::vec3 p, glm::vec3 aimPos, float i, float angle) {
+		position = p; intensity = i; aimPoint = aimPos; direction = p - aimPoint;
+		coneAngle = tan(glm::radians(angle)) * coneHeight;
 	}
-	pointLight() {}
+	spotLight() {}
 
 
 	void draw() {
 		ofSetColor(ofColor::blue);
-		ofDrawSphere(aimPoint, 2);
+		ofDrawSphere(aimPoint, coneHeight/2);
 
 
 		// draw a cone object oriented towards aim position using the lookAt transformation
 	// matrix.  The "up" vector is (0, 1, 0)
 	//
 		ofPushMatrix();
-		glm::mat4 m = glm::lookAt(position, aimPoint, glm::vec3(0,1,0));
+		glm::mat4 m = glm::lookAt(position, aimPoint, glm::vec3(0, 1, 0));
 		ofMultMatrix(glm::inverse(m));
 		ofRotate(-90, 1, 0, 0);
 		ofSetColor(ofColor::lightGray);
 		ofDrawCone(coneAngle, coneHeight);
 		ofPopMatrix();
 		ofDrawLine(position, aimPoint);
-		//Ray r = Ray(position,aimPoint - position);
-		//r.draw(50);
 	}
 
 	glm::vec3 direction = glm::vec3(0);
@@ -138,7 +138,7 @@ public:
 
 	float coneAngle = 0;
 	float length = 20;
-	float coneHeight = 2;
+	float coneHeight = 20;
 	bool lightSelected = false;
 	bool aimPointSelected = false;
 };
@@ -279,7 +279,12 @@ public:
 	ofColor lambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, Light light);
 	ofColor phong(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, const ofColor specular, float power, float distance, Ray r, Light light);
 	ofColor shade(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, const ofColor specular, float power, Ray r);
-	ofColor pointLightLambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, pointLight light);
+	ofColor spotLightLambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, spotLight light);
+	void updateAngle(bool increase);
+
+	glm::vec3 planeNormal;
+	Plane p;
+	Ray r;
 
 
 	const float zero = 0.0;
@@ -302,12 +307,12 @@ public:
 	//
 	vector<SceneObject*> scene;
 	vector<Light*> light;
-	vector<pointLight*> pointLights;
+	vector<spotLight*> spotLights;
 	int lightIndex;
 
 	vector<glm::vec3> aimPoint;
 	vector<glm::vec3> spotLightPos;
-	float angle;
+	vector<float> angle;
 	glm::vec3 mouseLast;
 
 
@@ -315,6 +320,9 @@ public:
 	int imageHeight = 800;
 
 	int closestIndex = 0;
+
+	float slowdown = 1;
+
 
 	//state variables
 	//
@@ -332,4 +340,5 @@ public:
 	ofxFloatSlider intensity;
 	ofxPanel gui;
 
+	
 };
