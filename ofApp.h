@@ -107,7 +107,9 @@ public:
 
 class pointLight : public Light {
 public:
-	pointLight(glm::vec3 p, glm::vec3 aimPos, float i, float angle) { position = p; intensity = i; aimPoint = aimPos; direction = p-aimPoint; coneAngle = angle; }
+	pointLight(glm::vec3 p, glm::vec3 aimPos, float i, float angle) { position = p; intensity = i; aimPoint = aimPos; direction = p-aimPoint; 
+	coneAngle = tan(glm::radians(angle)) * coneHeight; 
+	}
 	pointLight() {}
 
 
@@ -124,8 +126,11 @@ public:
 		ofMultMatrix(glm::inverse(m));
 		ofRotate(-90, 1, 0, 0);
 		ofSetColor(ofColor::lightGray);
-		ofDrawCone(.5, 1);
+		ofDrawCone(coneAngle, coneHeight);
 		ofPopMatrix();
+		ofDrawLine(position, aimPoint);
+		//Ray r = Ray(position,aimPoint - position);
+		//r.draw(50);
 	}
 
 	glm::vec3 direction = glm::vec3(0);
@@ -133,6 +138,9 @@ public:
 
 	float coneAngle = 0;
 	float length = 20;
+	float coneHeight = 2;
+	bool lightSelected = false;
+	bool aimPointSelected = false;
 };
 
 
@@ -271,6 +279,8 @@ public:
 	ofColor lambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, Light light);
 	ofColor phong(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, const ofColor specular, float power, float distance, Ray r, Light light);
 	ofColor shade(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, const ofColor specular, float power, Ray r);
+	ofColor pointLightLambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, pointLight light);
+
 
 	const float zero = 0.0;
 
@@ -280,6 +290,7 @@ public:
 	ofEasyCam  mainCam;
 	ofCamera sideCam;
 	ofCamera previewCam;
+	ofCamera sceneCam;
 	ofCamera* theCam;    // set to current camera either mainCam or sideCam
 
 	// set up one render camera to render image through
@@ -291,10 +302,14 @@ public:
 	//
 	vector<SceneObject*> scene;
 	vector<Light*> light;
+	vector<pointLight*> pointLights;
+	int lightIndex;
 
-	glm::vec3 aimPoint;
-	glm::vec3 spotLightPos;
+	vector<glm::vec3> aimPoint;
+	vector<glm::vec3> spotLightPos;
 	float angle;
+	glm::vec3 mouseLast;
+
 
 	int imageWidth = 1200;
 	int imageHeight = 800;
@@ -307,6 +322,9 @@ public:
 	bool trace = false;
 	bool background = true;
 	bool blocked = false;
+	bool aimPointDrag = false;
+	bool lightDrag = false;
+
 
 	//GUI
 	//
