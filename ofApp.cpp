@@ -2,6 +2,12 @@
 
 #include <glm/gtx/intersect.hpp>
 
+//calculate cone width with angle
+
+//make manipulator more smooth
+
+//change phong and lambert to only light in cone width
+
 
 
 // Intersect Ray with Plane  (wrapper on glm::intersect*
@@ -56,8 +62,7 @@ void ofApp::setup() {
 	gui.add(power.setup("Phong p", 100, 10, 10000));
 	bHide = true;
 
-	theCam = &mainCam;
-	mainCam.setDistance(10);
+	mainCam.setDistance(50);
 	mainCam.setNearClip(.1);
 	sideCam.setPosition(glm::vec3(5, 0, 0));
 	sideCam.lookAt(glm::vec3(0, 0, 0));
@@ -65,6 +70,12 @@ void ofApp::setup() {
 	previewCam.setFov(90);
 	previewCam.setPosition(0, 0, 10);
 	previewCam.lookAt(glm::vec3(0, 0, -1));
+	sceneCam.setPosition(glm::vec3(0,50,100));
+	sceneCam.lookAt(glm::vec3(0, 0, 0));
+	theCam = &previewCam;
+
+
+
 
 
 
@@ -73,14 +84,22 @@ void ofApp::setup() {
 	cout << "t to start ray tracer" << endl;
 	cout << "d to show render" << endl;
 
-	aimPoint = glm::vec3(1, 1, 0);
-	spotLightPos = glm::vec3(2, 1, 0);
-	angle = 30;
+	aimPoint.clear();
+	spotLightPos.clear();
+
+	aimPoint.push_back(glm::vec3(1, -5, 0));
+	spotLightPos.push_back(glm::vec3(-20, 30, 45));
+
+	//aimPoint.push_back(glm::vec3(3, 3, 0));
+	//spotLightPos.push_back(glm::vec3(-30, 30, 45));
+
+	angle = 15;
 
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
+	
 
 }
 
@@ -176,10 +195,44 @@ ofColor ofApp::phong(const glm::vec3& p, const glm::vec3& norm, const ofColor di
 	float distance1 = glm::distance(light.position, p);
 
 
-	phong += (ambient(diffuse)) + (lambert(p, norm, diffuse, distance1, r, light)) + (specular * (light.intensity / distance1 * distance1) * glm::pow(glm::max(zero, glm::dot(norm, h)), power));
+	//phong += (ambient(diffuse)) + (lambert(p, norm, diffuse, distance1, r, light)) + (specular * (light.intensity / distance1 * distance1) * glm::pow(glm::max(zero, glm::dot(norm, h)), power));
+	phong += (lambert(p, norm, diffuse, distance1, r, light)) + (specular * (light.intensity / distance1 * distance1) * glm::pow(glm::max(zero, glm::dot(norm, h)), power));
+
 
 	return phong;
 }
+
+//--------------------------------------------------------------
+//calculates lambert shading from pointlights
+//returns shaded color
+//--------------------------------------------------------------
+//--------------------------------------------------------------
+//--------------------------------------------------------------
+//--------------------------------------------------------------
+
+ofColor ofApp::pointLightLambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, pointLight light) {
+	ofColor lambert = ofColor(0, 0, 0);
+	float zero = 0.0;
+	float inf = FLT_MAX;
+	glm::vec3 point, normal;
+	//
+	//distance = light.pos - p
+	//
+	//if p is inside cone illumination area
+
+
+	Ray s = Ray(light.position, glm::normalize(light.aimPoint - light.position));
+	if (scene[0]->intersect(s, point, normal)) {
+		glm::vec3 l = glm::normalize(light.position - p);
+		lambert += diffuse * (light.intensity / distance * distance) * (glm::max(zero, glm::dot(glm::vec3(0, 1, 0), l)));
+	}
+
+	//if l is inside the cone then lambert
+	//l *= light.coneAngle;
+
+	return lambert;
+}
+
 
 //--------------------------------------------------------------
 //adds shading contribution
@@ -226,9 +279,20 @@ ofColor ofApp::shade(const glm::vec3& p, const glm::vec3& norm, const ofColor di
 		}
 		if (!blocked) {
 			//add shading contribution for current light
-			shaded += phong(p, norm, diffuse, specular, power, distance, r, *light[i]);
+			//shaded += phong(p, norm, diffuse, specular, power, distance, r, *light[i]);
 		}
 	}
+
+	//pointLights shading
+	
+		for (int i = 0; i < pointLights.size(); i++) {
+			shaded += pointLightLambert(p, norm, diffuse, distance, r, *pointLights[i]);
+			//shaded += phong(p, norm, diffuse, specular, power, distance, r, *pointLights[i]);
+
+		}
+	
+
+
 	return shaded;
 }
 //--------------------------------------------------------------
@@ -244,37 +308,48 @@ void ofApp::draw() {
 
 	scene.push_back(new Plane(glm::vec3(0, 1, -50), glm::vec3(0, 0, 1), ofColor::darkGray, 600, 400));	        	//wall plane
 
-	scene.push_back(new Sphere(glm::vec3(0, 1, -2), 1, ofColor::purple));											//purple sphere
+	//scene.push_back(new Sphere(glm::vec3(0, 1, -2), 1, ofColor::purple));											//purple sphere
 
-	scene.push_back(new Sphere(glm::vec3(-1, 0, 1), 1, ofColor::blue));												//blue sphere
+	//scene.push_back(new Sphere(glm::vec3(-1, 0, 1), 1, ofColor::blue));												//blue sphere
 
-	scene.push_back(new Sphere(glm::vec3(.5, 0, 0), 1, ofColor::darkGreen));											//green sphere
+	//scene.push_back(new Sphere(glm::vec3(.5, 0, 0), 1, ofColor::darkGreen));											//green sphere
 
 
 	light.clear();
 
-	light.push_back(new Light(glm::vec3(100, 150, 150), .2));			//top right light
+	//light.push_back(new Light(glm::vec3(100, 150, 150), .2));			//top right light
 
 	//light.push_back(new Light(glm::vec3(-20, 30, 45), .2));		//top left light
 
 	//light.push_back(new Light(glm::vec3(-5, -2, 20), .2));				//bottom light
 
-	light.push_back(new pointLight(spotLightPos, aimPoint, .2, angle));
+	pointLights.clear();
+
+	//pointLights.push_back(new pointLight(glm::vec3(-20, 30, 45), glm::vec3(1,1,1), .2, angle));
+
+	for (int i = 0; i < aimPoint.size(); i++) {
+		pointLights.push_back(new pointLight(spotLightPos[i], aimPoint[i], .2, angle));
+	}
 
 
-	//draw all scene objects
-	/*
+	
 	for (int i = 0; i < scene.size(); i++) {
 		ofColor color = scene[i]->diffuseColor;
 		ofSetColor(color);
 		scene[i]->draw();
 	}
-	*/
+	
 
 	//draw all lights
 	for (int i = 0; i < light.size(); i++) {
 		light[i]->setIntensity(intensity);
 		light[i]->draw();
+	}
+
+	//draw all spotlights
+	for (int i = 0; i < pointLights.size(); i++) {
+		pointLights[i]->setIntensity(intensity);
+		pointLights[i]->draw();
 	}
 
 
@@ -306,6 +381,9 @@ void ofApp::keyPressed(int key) {
 	case OF_KEY_F3:
 		theCam = &previewCam;
 		break;
+	case OF_KEY_F4:
+		theCam = &sceneCam;
+		break;
 	case 'd':
 		drawImage = !drawImage;
 		break;
@@ -316,10 +394,10 @@ void ofApp::keyPressed(int key) {
 		bHide = !bHide;
 		break;
 	case OF_KEY_LEFT:
-		aimPoint += glm::vec3(1, 0, 0);
+		angle -= .5;
 		break;
 	case OF_KEY_RIGHT:
-		spotLightPos += glm::vec3(1, 0, 0);
+		angle += .5;
 		break;
 	default:
 		break;
@@ -338,26 +416,57 @@ void ofApp::mouseMoved(int x, int y) {
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
+	glm::vec3 current = theCam->screenToWorld(glm::vec3(x, y, 0));
+	//glm::vec3 current(x, y, 0);
 
+	if (aimPointDrag) {
+		glm::vec3 delta = current - mouseLast;
+		aimPoint[lightIndex] += delta * 10;
+		mouseLast = current;
+	}
+
+	if (lightDrag) {
+		glm::vec3 delta = current - mouseLast;
+		spotLightPos[lightIndex] += delta * 5;
+		mouseLast = current;
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-	Ray r = Ray(glm::vec3(x, y, 0), glm::normalize(glm::vec3(x, y, 0)));
-	glm::vec3 point, normal;
-	bool selected = glm::intersectRaySphere(r.p, r.d, aimPoint, 2, point, normal);
-	if (selected) {
-		cout << "selected" << endl;
-	}
-	else {
-		cout << "not selected" << endl;
+	glm::vec3 screen3dpt = theCam->screenToWorld(glm::vec3(x, y, 0));
+	glm::vec3 rayOrigin = theCam->getPosition();
+	glm::vec3 rayDir = glm::normalize(screen3dpt - rayOrigin);
+	bool aimPointSelected = false;
+	bool lightSelected = false;
 
+
+	Ray r = Ray(rayOrigin, rayDir);
+	glm::vec3 point, normal;
+	for (int i = 0; i < pointLights.size(); i++) {
+		aimPointSelected = glm::intersectRaySphere(r.p, r.d, pointLights[i]->aimPoint, 2, point, normal);
+		if (aimPointSelected) {
+			lightIndex = i;
+			aimPointDrag = true;
+			mouseLast = theCam->screenToWorld(glm::vec3(x, y, 0));
+			//mouseLast = glm::vec3(x, y, 0);
+
+		}
+
+
+		lightSelected = glm::intersectRaySphere(r.p, r.d, pointLights[i]->position, 1, point, normal);
+		if (lightSelected) {
+			lightIndex = i;
+			lightDrag = true;
+			mouseLast = theCam->screenToWorld(glm::vec3(x, y, 0));
+		}
 	}
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button) {
-
+	lightDrag = false;
+	aimPointDrag = false;
 }
 
 //--------------------------------------------------------------
