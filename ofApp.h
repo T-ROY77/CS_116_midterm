@@ -110,6 +110,7 @@ class spotLight : public Light {
 public:
 	spotLight(glm::vec3 p, glm::vec3 aimPos, float i, float angle) {
 		position = p; intensity = i; aimPoint = aimPos; direction = p - aimPoint;
+		angle1 = angle;
 		coneAngle = tan(glm::radians(angle)) * coneHeight;
 	}
 	spotLight() {}
@@ -117,7 +118,10 @@ public:
 
 	void draw() {
 		ofSetColor(ofColor::blue);
-		ofDrawSphere(aimPoint, coneHeight/2);
+		//ofDrawSphere(aimPoint, coneHeight/10);
+		ofDrawSphere(aimPoint, coneAngle);
+
+
 
 
 		// draw a cone object oriented towards aim position using the lookAt transformation
@@ -131,6 +135,7 @@ public:
 		ofDrawCone(coneAngle, coneHeight);
 		ofPopMatrix();
 		ofDrawLine(position, aimPoint);
+
 	}
 
 	glm::vec3 direction = glm::vec3(0);
@@ -138,9 +143,11 @@ public:
 
 	float coneAngle = 0;
 	float length = 20;
-	float coneHeight = 20;
+	float coneHeight = 50;
 	bool lightSelected = false;
 	bool aimPointSelected = false;
+
+	float angle1 = 15;
 };
 
 
@@ -241,7 +248,7 @@ public:
 class RenderCam : public SceneObject {
 public:
 	RenderCam() {
-		position = glm::vec3(0, 0, 10);
+		position = glm::vec3(0, 0, 25);
 		aim = glm::vec3(0, 0, -1);
 	}
 	Ray getRay(float u, float v);
@@ -280,6 +287,8 @@ public:
 	ofColor phong(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, const ofColor specular, float power, float distance, Ray r, Light light);
 	ofColor shade(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, const ofColor specular, float power, Ray r);
 	ofColor spotLightLambert(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, spotLight light);
+	ofColor spotLightLambert2(const glm::vec3& p, const glm::vec3& norm, const ofColor diffuse, float distance, Ray r, spotLight light);
+
 	void updateAngle(bool increase);
 
 	glm::vec3 planeNormal;
@@ -332,13 +341,15 @@ public:
 	bool blocked = false;
 	bool aimPointDrag = false;
 	bool lightDrag = false;
-
+	bool renderdraw = false;
 
 	//GUI
 	//
 	ofxFloatSlider power;
 	ofxFloatSlider intensity;
+	ofxFloatSlider spotLightIntensity;
+
 	ofxPanel gui;
 
-	
+
 };
